@@ -1,190 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>VIP Pro BG Remover - Admin Panel</title>
-<style>
-  body {
-    background: #121212;
-    color: #fff;
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 40px;
-    min-height: 100vh;
-  }
-  .container {
-    width: 400px;
-    background: #1e1e1e;
-    border-radius: 15px;
-    padding: 20px;
-    box-shadow: 0 0 20px #00ff99;
-  }
-  h1 {
-    text-align: center;
-    color: gold;
-    margin-bottom: 20px;
-  }
-  input[type="text"],
-  input[type="password"],
-  input[type="number"] {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border-radius: 50px;
-    border: 1px solid #00ff99;
-    background: #2e2e2e;
-    color: white;
-    font-size: 16px;
-    box-sizing: border-box;
-  }
-  button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-    border-radius: 50px;
-    border: none;
-    background: gold;
-    font-weight: bold;
-    cursor: pointer;
-    font-size: 16px;
-    color: black;
-  }
-  button:hover {
-    background: #ffcc00;
-  }
-  .message {
-    text-align: center;
-    margin-top: 10px;
-    min-height: 20px;
-  }
-  .hidden {
-    display: none;
-  }
-  ul.keys-list {
-    list-style: none;
-    padding-left: 0;
-    margin-top: 15px;
-  }
-  ul.keys-list li {
-    background: #222;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    border-radius: 12px;
-    color: #00ff99;
-    font-family: monospace;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <title>Admin Panel - BG Remover</title>
+  <style>
+    body { background: #111; color: #fff; font-family: Arial; padding: 30px; }
+    .container { max-width: 400px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px #00ff99; }
+    h2 { text-align: center; color: gold; }
+    input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; }
+    button { background: gold; color: #000; font-weight: bold; cursor: pointer; }
+    .success { color: #00ff99; text-align: center; margin-top: 10px; }
+  </style>
 </head>
 <body>
-
-<div class="container">
-  <h1>Admin Panel Login</h1>
-
-  <div id="login-section">
-    <input type="text" id="adminUser" placeholder="Username" autocomplete="off" />
-    <input type="password" id="adminPass" placeholder="Password" autocomplete="off" />
-    <button id="loginBtn">Login</button>
-    <div class="message" id="loginMessage"></div>
+  <div class="container">
+    <h2>Admin Key Generator</h2>
+    <select id="plan">
+      <option value="100">Plan 1 - 100 Credits</option>
+      <option value="250">Plan 2 - 250 Credits</option>
+      <option value="1000">Plan 3 - 1000 Credits</option>
+    </select>
+    <button onclick="generateKey()">Generate Key</button>
+    <div class="success" id="result"></div>
   </div>
 
-  <div id="admin-panel" class="hidden">
-    <h1>Generate Access Keys</h1>
-    <input type="number" id="creditAmount" placeholder="Credits (e.g. 100)" min="1" />
-    <button id="generateKeyBtn">Generate Key</button>
-    <div class="message" id="keyMessage"></div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
 
-    <h3>Generated Keys (localStorage)</h3>
-    <ul class="keys-list" id="keysList"></ul>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC14VjV9H-sXGWpKF7zWcTvNaOfTpVs9mw",
+      authDomain: "bg-remover-1699f.firebaseapp.com",
+      databaseURL: "https://bg-remover-1699f-default-rtdb.firebaseio.com",
+      projectId: "bg-remover-1699f",
+      storageBucket: "bg-remover-1699f.appspot.com",
+      messagingSenderId: "562843649498",
+      appId: "1:562843649498:web:435a7caddf8059ace2ace3",
+      measurementId: "G-3PQ5FVBW3X"
+    };
 
-    <button id="logoutBtn" style="background: #ff4444; margin-top: 30px;">Logout</button>
-  </div>
-</div>
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
 
-<script>
-  const USERNAME = "X HANI";
-  const PASSWORD = "Shah@890";
+    function generateKey() {
+      const credits = document.getElementById("plan").value;
+      const key = "VIP" + Math.random().toString(36).substring(2, 10).toUpperCase();
+      const keyRef = push(ref(db, "keys/"));
 
-  const loginSection = document.getElementById("login-section");
-  const adminPanel = document.getElementById("admin-panel");
-  const loginBtn = document.getElementById("loginBtn");
-  const loginMessage = document.getElementById("loginMessage");
-
-  const creditAmountInput = document.getElementById("creditAmount");
-  const generateKeyBtn = document.getElementById("generateKeyBtn");
-  const keyMessage = document.getElementById("keyMessage");
-  const keysList = document.getElementById("keysList");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  // Storage key for keys
-  const storageKey = "vipBgKeys";
-
-  function loadKeys() {
-    const savedKeys = JSON.parse(localStorage.getItem(storageKey)) || [];
-    keysList.innerHTML = "";
-    if (savedKeys.length === 0) {
-      keysList.innerHTML = "<li>No keys generated yet.</li>";
-      return;
+      set(keyRef, {
+        key: key,
+        credits: parseInt(credits),
+        used: false
+      }).then(() => {
+        document.getElementById("result").textContent = `Key generated: ${key} (${credits} credits)`;
+      });
     }
-    savedKeys.forEach(({ key, credits, used }) => {
-      keysList.innerHTML += `<li>${key} - Credits: ${credits} - ${used ? 'Used' : 'Unused'}</li>`;
-    });
-  }
-
-  function generateRandomKey(length = 8) {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < length; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  }
-
-  loginBtn.addEventListener("click", () => {
-    const user = document.getElementById("adminUser").value.trim();
-    const pass = document.getElementById("adminPass").value;
-
-    if (user === USERNAME && pass === PASSWORD) {
-      loginSection.classList.add("hidden");
-      adminPanel.classList.remove("hidden");
-      loginMessage.textContent = "";
-      loadKeys();
-    } else {
-      loginMessage.style.color = "red";
-      loginMessage.textContent = "Invalid username or password!";
-    }
-  });
-
-  generateKeyBtn.addEventListener("click", () => {
-    const credits = parseInt(creditAmountInput.value);
-    if (!credits || credits < 1) {
-      keyMessage.style.color = "red";
-      keyMessage.textContent = "Please enter a valid credit amount.";
-      return;
-    }
-    const key = generateRandomKey(10);
-    const savedKeys = JSON.parse(localStorage.getItem(storageKey)) || [];
-
-    savedKeys.push({ key, credits, used: false });
-    localStorage.setItem(storageKey, JSON.stringify(savedKeys));
-
-    creditAmountInput.value = "";
-    keyMessage.style.color = "lime";
-    keyMessage.textContent = `Key generated: ${key}`;
-
-    loadKeys();
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    adminPanel.classList.add("hidden");
-    loginSection.classList.remove("hidden");
-    document.getElementById("adminUser").value = "";
-    document.getElementById("adminPass").value = "";
-    keyMessage.textContent = "";
-    loginMessage.textContent = "";
-  });
-</script>
-
+  </script>
 </body>
-  </html>
+</html>
