@@ -2,31 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Admin Panel - BG Remover</title>
+  <title>Admin Panel - VIP BG Remover</title>
   <style>
-    body { background: #111; color: #fff; font-family: Arial; padding: 30px; }
-    .container { max-width: 400px; margin: auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px #00ff99; }
-    h2 { text-align: center; color: gold; }
-    input, select, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 8px; border: none; }
-    button { background: gold; color: #000; font-weight: bold; cursor: pointer; }
-    .success { color: #00ff99; text-align: center; margin-top: 10px; }
+    body { background:#111; color:#fff; font-family: sans-serif; display:flex; justify-content:center; padding:50px; }
+    .container { background:#222; padding:30px; border-radius:10px; width:350px; box-shadow: 0 0 15px lime; }
+    h2 { text-align:center; color:gold; }
+    input, button { width:100%; padding:10px; margin:10px 0; border-radius:5px; border:none; }
+    button { background:gold; color:#000; font-weight:bold; cursor:pointer; }
+    #dashboard { display:none; }
+    .success { color:#00ff99; }
+    .error { color:red; }
   </style>
 </head>
 <body>
   <div class="container">
-    <h2>Admin Key Generator</h2>
-    <select id="plan">
-      <option value="100">Plan 1 - 100 Credits</option>
-      <option value="250">Plan 2 - 250 Credits</option>
-      <option value="1000">Plan 3 - 1000 Credits</option>
-    </select>
-    <button onclick="generateKey()">Generate Key</button>
-    <div class="success" id="result"></div>
+    <div id="loginPanel">
+      <h2>Admin Login</h2>
+      <input type="text" id="adminUser" placeholder="Username" />
+      <input type="password" id="adminPass" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <p id="loginMessage"></p>
+    </div>
+
+    <div id="dashboard">
+      <h2>Generate Access Key</h2>
+      <input type="text" id="newKey" placeholder="Enter new key" />
+      <input type="number" id="creditValue" placeholder="Credits to add" />
+      <button onclick="generateKey()">Generate Key</button>
+      <p id="keyMessage"></p>
+    </div>
   </div>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
-    import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+    // Firebase Config
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC14VjV9H-sXGWpKF7zWcTvNaOfTpVs9mw",
@@ -42,17 +52,48 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    function generateKey() {
-      const credits = document.getElementById("plan").value;
-      const key = "VIP" + Math.random().toString(36).substring(2, 10).toUpperCase();
-      const keyRef = push(ref(db, "keys/"));
+    // Login Function
+    function login() {
+      const user = document.getElementById("adminUser").value.trim();
+      const pass = document.getElementById("adminPass").value.trim();
+      const msg = document.getElementById("loginMessage");
 
+      if (user === "X HANI" && pass === "Shah@890") {
+        document.getElementById("loginPanel").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+      } else {
+        msg.textContent = "Invalid credentials";
+        msg.className = "error";
+      }
+    }
+
+    // Generate Key
+    window.generateKey = function () {
+      const key = document.getElementById("newKey").value.trim().toUpperCase();
+      const credits = parseInt(document.getElementById("creditValue").value);
+      const msg = document.getElementById("keyMessage");
+
+      if (!key || isNaN(credits) || credits <= 0) {
+        msg.textContent = "Please enter valid key and credits.";
+        msg.className = "error";
+        return;
+      }
+
+      const keyRef = ref(db, 'keys/' + key);
       set(keyRef, {
         key: key,
-        credits: parseInt(credits),
+        credits: credits,
         used: false
-      }).then(() => {
-        document.getElementById("result").textContent = `Key generated: ${key} (${credits} credits)`;
+      })
+      .then(() => {
+        msg.textContent = `Key "${key}" generated with ${credits} credits.`;
+        msg.className = "success";
+        document.getElementById("newKey").value = "";
+        document.getElementById("creditValue").value = "";
+      })
+      .catch(err => {
+        msg.textContent = "Error: " + err.message;
+        msg.className = "error";
       });
     }
   </script>
