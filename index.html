@@ -1,42 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Admin Panel - VIP BG Remover</title>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Generate Keys</title>
   <style>
-    body { background:#111; color:#fff; font-family: sans-serif; display:flex; justify-content:center; padding:50px; }
-    .container { background:#222; padding:30px; border-radius:10px; width:350px; box-shadow: 0 0 15px lime; }
-    h2 { text-align:center; color:gold; }
+    body { background:#111; color:#fff; font-family:sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .panel { background:#222; padding:30px; border-radius:10px; width:350px; box-shadow: 0 0 10px lime; }
     input, button { width:100%; padding:10px; margin:10px 0; border-radius:5px; border:none; }
-    button { background:gold; color:#000; font-weight:bold; cursor:pointer; }
-    #dashboard { display:none; }
-    .success { color:#00ff99; }
-    .error { color:red; }
+    button { background:lime; font-weight:bold; cursor:pointer; }
+    .hidden { display:none; }
+    .message { margin-top:10px; font-weight:bold; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div id="loginPanel">
+  <div class="panel">
+    <div id="loginBox">
       <h2>Admin Login</h2>
-      <input type="text" id="adminUser" placeholder="Username" />
-      <input type="password" id="adminPass" placeholder="Password" />
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
       <button onclick="login()">Login</button>
-      <p id="loginMessage"></p>
-    </div>
+      <p class="message" id="loginMessage"></p>
+    </div><div id="adminBox" class="hidden">
+  <h2>Generate Access Key</h2>
+  <input type="text" id="accessKey" placeholder="Enter Access Key">
+  <input type="number" id="creditAmount" placeholder="Enter Credits">
+  <button onclick="generateKey()">Generate Key</button>
+  <p class="message" id="keyMessage"></p>
+</div>
 
-    <div id="dashboard">
-      <h2>Generate Access Key</h2>
-      <input type="text" id="newKey" placeholder="Enter new key" />
-      <input type="number" id="creditValue" placeholder="Credits to add" />
-      <button onclick="generateKey()">Generate Key</button>
-      <p id="keyMessage"></p>
-    </div>
-  </div>
-
-  <script type="module">
-    // Firebase Config
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
+    import { getDatabase, ref, set, get, child } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-database.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyC14VjV9H-sXGWpKF7zWcTvNaOfTpVs9mw",
@@ -52,50 +45,49 @@
     const app = initializeApp(firebaseConfig);
     const db = getDatabase(app);
 
-    // Login Function
-    function login() {
-      const user = document.getElementById("adminUser").value.trim();
-      const pass = document.getElementById("adminPass").value.trim();
-      const msg = document.getElementById("loginMessage");
-
+    window.login = function () {
+      const user = document.getElementById('username').value;
+      const pass = document.getElementById('password').value;
+      const msg = document.getElementById('loginMessage');
       if (user === "X HANI" && pass === "Shah@890") {
-        document.getElementById("loginPanel").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
+        document.getElementById('loginBox').classList.add('hidden');
+        document.getElementById('adminBox').classList.remove('hidden');
       } else {
-        msg.textContent = "Invalid credentials";
-        msg.className = "error";
+        msg.textContent = "Invalid login credentials";
+        msg.style.color = "red";
       }
     }
 
-    // Generate Key
-    window.generateKey = function () {
-      const key = document.getElementById("newKey").value.trim().toUpperCase();
-      const credits = parseInt(document.getElementById("creditValue").value);
-      const msg = document.getElementById("keyMessage");
-
+    window.generateKey = async function () {
+      const key = document.getElementById('accessKey').value.trim().toUpperCase();
+      const credits = parseInt(document.getElementById('creditAmount').value);
+      const msg = document.getElementById('keyMessage');
       if (!key || isNaN(credits) || credits <= 0) {
-        msg.textContent = "Please enter valid key and credits.";
-        msg.className = "error";
+        msg.textContent = "Please enter a valid key and credit amount.";
+        msg.style.color = "red";
         return;
       }
 
-      const keyRef = ref(db, 'keys/' + key);
-      set(keyRef, {
-        key: key,
+      const dbRef = ref(db);
+      const snapshot = await get(child(dbRef, `keys/${key}`));
+      if (snapshot.exists()) {
+        msg.textContent = "Key already exists.";
+        msg.style.color = "red";
+        return;
+      }
+
+      set(ref(db, 'keys/' + key), {
         credits: credits,
         used: false
-      })
-      .then(() => {
-        msg.textContent = `Key "${key}" generated with ${credits} credits.`;
-        msg.className = "success";
-        document.getElementById("newKey").value = "";
-        document.getElementById("creditValue").value = "";
-      })
-      .catch(err => {
-        msg.textContent = "Error: " + err.message;
-        msg.className = "error";
+      }).then(() => {
+        msg.textContent = `Key "${key}" generated successfully with ${credits} credits.`;
+        msg.style.color = "lime";
+        document.getElementById('accessKey').value = "";
+        document.getElementById('creditAmount').value = "";
+      }).catch((error) => {
+        msg.textContent = "Error: " + error;
+        msg.style.color = "red";
       });
     }
-  </script>
-</body>
+  </script></body>
 </html>
